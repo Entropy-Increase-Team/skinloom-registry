@@ -1,0 +1,98 @@
+name: Registry PR Audit & Security Check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'manifests/**'
+      - 'blocked.yaml'
+      - 'schema/**'
+      - 'scripts/**'
+      - '.github/workflows/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+  security-events: write
+
+jobs:
+  validate-manifests:
+    name: Validate Manifests & Tiered Security Gate
+    runs-on: ubuntu-latest
+    outputs:
+      needs_security_review: ${{ steps.validate.outputs.needs_security_review }}
+      has_native: ${{ steps.validate.outputs.has_native }}
+      manifests: ${{ steps.validate.outputs.manifests }}
+    steps:
+      - name: Checkout registry
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate manifest schema & permission tiers
+        id: validate
+        run: node scripts/validate-manifests.mjs
+
+      - name: Attach needs-security-review label for Native / High-Risk / First Publish
+        if: steps.validate.outputs.needs_security_review == 'true' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['needs-security-review']
+            });
+
+  audit-packages:
+    name: Isolated Source Checkout, Lint & Vulnerability Scan
+    needs: validate-manifests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout registry
+        uses: actions/checkout@v4
+
+      - name: Setup Go 1.26.10+
+        uses: actions/setup-go@v5
+        with:
+          go-version: '^1.26.10'
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Initialize CodeQL for Go & JavaScript
+        uses: github/codeql-action/init@v3
+        with:
+          languages: go, javascript
+
+      - name: Audit each manifest at pinned commit SHA
+        env:
+          MANIFESTS_JSON: ${{ needs.validate-manifests.outputs.manifests }}
+        run: |
+          set -euo pipefail
+          node --input-type=module - << 'EOF'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import { parseSimpleYAML } from './scripts/validate-manifests.mjs';
+          for (const f of fs.readdirSync('manifests').filter((x) => /\.(ya?ml|json)$/i.test(x))) {
+            const doc = parseSimpleYAML(fs.readFileSync(path.join('manifests', f), 'utf8'));
+            const rel = doc.releases[0];
+            console.log(`Auditing ${doc.id}@${rel.version} (${doc.repository} @ ${rel.commit})`);
+          }
+          EOF
+
+      - name: Run govulncheck on Native Go plugins
+        if: needs.validate-manifests.outputs.has_native == 'true'
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3

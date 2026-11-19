@@ -1,0 +1,36 @@
+name: "📦 插件与主题上架咨询 (Package Submission Help)"
+description: "咨询插件/主题上架规范、五平台交叉编译或权限审核相关问题"
+title: "[Submission] <package-id>: "
+labels: ["question"]
+body:
+  - type: input
+    id: package_id
+    attributes:
+      label: "扩展 ID (Package ID)"
+      placeholder: "my-plugin"
+    validations:
+      required: true
+  - type: dropdown
+    id: runtime
+    attributes:
+      label: "扩展类型与运行时 (Kind & Runtime)"
+      options:
+        - "Tier 1 轻量沙箱插件 (kind: plugin, runtime: js)"
+        - "Tier 2 系统原生 Go 插件 (kind: plugin, runtime: native)"
+        - "主题扩展包 (kind: theme)"
+    validations:
+      required: true
+  - type: input
+    id: repository
+    attributes:
+      label: "开源仓库地址 (Repository URL)"
+      placeholder: "https://github.com/..."
+    validations:
+      required: false
+  - type: textarea
+    id: question
+    attributes:
+      label: "问题描述或日志输出 (Question / Logs)"
+      description: "请粘贴 validate-manifests.mjs 或 CI 构建输出日志"
+    validations:
+      required: true

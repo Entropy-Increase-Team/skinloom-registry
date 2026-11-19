@@ -1,0 +1,9 @@
+# Emergency revocation and malicious plugin blocklist.
+# Entries listed here are embedded into the signed index.v1.json and enforced
+# automatically by every SkinLoom instance during periodic security patrols.
+blocked: []
+# Example:
+# blocked:
+#   - id: compromised-plugin
+#     versions: "<=1.2.3"
+#     reason: "CVE-2026-0001 unauthorized data exfiltration"

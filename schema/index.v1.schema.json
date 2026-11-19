@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://registry.skinloom.cn/schema/index.v1.schema.json",
+  "title": "SkinLoom Registry Index v1",
+  "type": "object",
+  "required": ["schemaVersion", "generatedAt", "registryId", "packages", "blocked"],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "registryId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mirrors": {
+      "type": "array",
+      "items": { "type": "string", "format": "uri" }
+    },
+    "packages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "runtime", "name", "latest", "versions"],
+        "properties": {
+          "id": { "type": "string" },
+          "kind": { "type": "string", "enum": ["plugin", "theme"] },
+          "runtime": { "type": "string", "enum": ["js", "native"] },
+          "category": { "type": "string" },
+          "official": { "type": "boolean" },
+          "name": { "type": "object", "additionalProperties": { "type": "string" } },
+          "description": { "type": "object", "additionalProperties": { "type": "string" } },
+          "authors": { "type": "array", "items": { "type": "string" } },
+          "license": { "type": "string" },
+          "homepage": { "type": "string" },
+          "repository": { "type": "string" },
+          "latest": { "type": "string" },
+          "versions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["version", "apiVersion", "artifacts"],
+              "properties": {
+                "version": { "type": "string" },
+                "apiVersion": { "type": "integer" },
+                "nativeProtocolVersion": { "type": "integer" },
+                "engines": { "type": "object" },
+                "permissions": { "type": "array", "items": { "type": "string" } },
+                "dependencies": { "type": "object", "additionalProperties": { "type": "string" } },
+                "optionalDependencies": { "type": "object", "additionalProperties": { "type": "string" } },
+                "publishedAt": { "type": "string" },
+                "yanked": { "type": "boolean" },
+                "changelog": { "type": "string" },
+                "artifacts": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object",
+                    "required": ["urls", "sha256", "size"],
+                    "properties": {
+                      "urls": { "type": "array", "items": { "type": "string" } },
+                      "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+                      "size": { "type": "integer", "minimum": 1 },
+                      "signature": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "blocked": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "reason"],
+        "properties": {
+          "id": { "type": "string" },
+          "versions": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      }
+    }
+  }
+}

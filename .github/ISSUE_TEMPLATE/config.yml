@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "SkinLoom 主仓库 Bug 与功能反馈"
+    url: "https://github.com/Entropy-Increase-Team/skinloom/issues"
+    about: "如果是 SkinLoom 宿主核心、SDK 或 CLI 工具本身的 Bug，请前往主仓库提交 Issue"
+  - name: "SkinLoom 插件与主题开发文档"
+    url: "https://github.com/Entropy-Increase-Team/skinloom/tree/main/website/docs"
+    about: "查阅双轨插件架构、Go/TS SDK、五级主题与市场上架规范文档"

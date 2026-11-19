@@ -1,0 +1,147 @@
+name: Official Controlled Build, Ed25519 Sign & Mirror Sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'manifests/**'
+      - 'blocked.yaml'
+      - 'scripts/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-sign-publish:
+    name: Cross-Compile 5 Platforms, Sign & Sync R2 / Domestic Mirror
+    runs-on: ubuntu-latest
+    env:
+      SKINLOOM_REGISTRY_PRIVATE_KEY: ${{ secrets.SKINLOOM_REGISTRY_PRIVATE_KEY }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+      CDN_PURGE_WEBHOOK_URL: ${{ secrets.CDN_PURGE_WEBHOOK_URL }}
+    steps:
+      - name: Checkout registry repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go 1.26.10+
+        uses: actions/setup-go@v5
+        with:
+          go-version: '^1.26.10'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate all manifests before building
+        run: node scripts/validate-manifests.mjs
+
+      - name: Cross-compile split-platform .slp packages & sign with Official Ed25519 Key
+        run: |
+          set -euo pipefail
+          mkdir -p dist/packages
+          KEY_FILE=""
+          if [ -n "${SKINLOOM_REGISTRY_PRIVATE_KEY:-}" ]; then
+            KEY_FILE="$(mktemp)"
+            trap 'rm -f "$KEY_FILE"' EXIT
+            printf '%s\n' "$SKINLOOM_REGISTRY_PRIVATE_KEY" > "$KEY_FILE"
+          fi
+
+          node --input-type=module - "$KEY_FILE" << 'EOF'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import { execFileSync } from 'node:child_process';
+          import { parseSimpleYAML } from './scripts/validate-manifests.mjs';
+
+          const keyFile = process.argv[2] || '';
+          const files = fs.existsSync('manifests')
+            ? fs.readdirSync('manifests').filter((f) => /\.(ya?ml|json)$/i.test(f)).sort()
+            : [];
+
+          if (files.length === 0) {
+            console.log('No live manifests in manifests/ yet; generating empty index.v1.json.');
+            process.exit(0);
+          }
+          if (!keyFile) {
+            throw new Error('SKINLOOM_REGISTRY_PRIVATE_KEY secret is required to sign official packages.');
+          }
+
+          for (const file of files) {
+            const doc = parseSimpleYAML(fs.readFileSync(path.join('manifests', file), 'utf8'));
+            for (const rel of doc.releases) {
+              if (rel.yanked) continue;
+              const outDir = path.resolve('dist/packages', doc.id, rel.version);
+              fs.mkdirSync(outDir, { recursive: true });
+              const workDir = fs.mkdtempSync('/tmp/skinloom-reg-build-');
+              try {
+                execFileSync('git', ['init', workDir], { stdio: 'inherit' });
+                execFileSync('git', ['-C', workDir, 'remote', 'add', 'origin', doc.repository], { stdio: 'inherit' });
+                execFileSync('git', ['-C', workDir, 'fetch', '--depth', '1', 'origin', rel.commit], { stdio: 'inherit' });
+                execFileSync('git', ['-C', workDir, 'checkout', '--detach', 'FETCH_HEAD'], { stdio: 'inherit' });
+
+                const pkgDir = doc.subdir ? path.resolve(workDir, doc.subdir) : path.resolve(workDir);
+                const rootResolved = path.resolve(workDir);
+                if (pkgDir !== rootResolved && !pkgDir.startsWith(rootResolved + path.sep)) {
+                  throw new Error(`Invalid subdir escaping workspace: ${doc.subdir}`);
+                }
+                const args = ['skinloom-plugin', 'pack', pkgDir, '--sign', keyFile];
+                if (doc.runtime === 'native') {
+                  const targets = Array.isArray(rel.targets) && rel.targets.length > 0
+                    ? rel.targets.join(',')
+                    : 'linux/amd64,linux/arm64,windows/amd64,darwin/arm64,darwin/amd64';
+                  args.push('--native', '--split-platforms', '--targets', targets, '--out', path.join(outDir, `${doc.id}-${rel.version}.slp`));
+                } else {
+                  args.push('--out', path.join(outDir, `${doc.id}-${rel.version}.slp`));
+                }
+                execFileSync('npx', args, {
+                  stdio: 'inherit',
+                  env: { ...process.env, CGO_ENABLED: '0' },
+                });
+              } finally {
+                fs.rmSync(workDir, { recursive: true, force: true });
+              }
+            }
+          }
+          EOF
+
+      - name: Generate and sign index.v1.json + index.v1.json.sig
+        run: node scripts/build-index.mjs dist dist/packages
+
+      - name: Publish dist/ to GitHub fallback branch (dist)
+        if: env.SKINLOOM_REGISTRY_PRIVATE_KEY != ''
+        run: |
+          set -euo pipefail
+          git config user.name "skinloom-registry-bot"
+          git config user.email "registry-bot@skinloom.cn"
+          git checkout --orphan dist-publish
+          git rm -rf .
+          cp -r dist/* .
+          rm -rf dist
+          git add -A
+          git commit -m "chore(registry): publish signed index.v1.json (${GITHUB_SHA::7})"
+          git push -f origin dist-publish:dist
+
+      - name: Sync dist/ to Cloudflare R2 primary origin (registry.skinloom.cn)
+        if: env.R2_BUCKET_NAME != '' && env.SKINLOOM_REGISTRY_PRIVATE_KEY != ''
+        run: |
+          aws s3 sync dist/packages "s3://${R2_BUCKET_NAME}/packages" \
+            --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com" \
+            --cache-control "public, max-age=31536000, immutable"
+          aws s3 cp dist/index.v1.json "s3://${R2_BUCKET_NAME}/index.v1.json" \
+            --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com" \
+            --cache-control "public, max-age=60"
+          aws s3 cp dist/index.v1.json.sig "s3://${R2_BUCKET_NAME}/index.v1.json.sig" \
+            --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com" \
+            --cache-control "public, max-age=60"
+
+      - name: Trigger Domestic CDN Cache Purge
+        if: env.CDN_PURGE_WEBHOOK_URL != '' && env.SKINLOOM_REGISTRY_PRIVATE_KEY != ''
+        run: |
+          curl -fsSL -X POST "$CDN_PURGE_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d '{"urls":["https://registry.skinloom.cn/index.v1.json","https://registry.skinloom.cn/index.v1.json.sig"]}'

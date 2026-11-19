@@ -1,0 +1,45 @@
+name: "🚨 恶意插件或高危漏洞紧急举报 (Malicious / Vulnerable Package Report)"
+description: "举报已上架插件或主题中的恶意代码、后门或高危安全漏洞，请求加入 blocked.yaml 全网熔断"
+title: "[SECURITY] 举报风险扩展: <package-id>"
+labels: ["security", "needs-security-review"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        > **注意**：如果该漏洞属于尚未公开利用细节的 0-day 漏洞，建议优先通过仓库 **Security → Report a vulnerability** 私密提交。若已确认某版本包含恶意代码需立即触发全网宿主自动停用，请填写以下表单。
+  - type: input
+    id: package_id
+    attributes:
+      label: "扩展 ID (Package ID)"
+      description: "对应 manifests/<id>.yaml 中的 id"
+      placeholder: "例如: example-plugin"
+    validations:
+      required: true
+  - type: input
+    id: affected_versions
+    attributes:
+      label: "受影响版本范围 (Affected SemVer Range)"
+      description: "需要加入 blocked.yaml 的 SemVer 范围（例如 <=1.2.3 或 *）"
+      placeholder: "<=1.2.3"
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: "风险类别 (Risk Category)"
+      options:
+        - "恶意后门 / 数据窃取 (Malicious Backdoor / Data Exfiltration)"
+        - "远程代码执行 / 越权访问 (RCE / Privilege Escalation)"
+        - "SQL 注入 / 跨表越界访问 (SQL Injection / Isolation Bypass)"
+        - "XSS / CSRF / SSRF 安全漏洞"
+        - "其它严重违规行为"
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: "源码位置与复现证据 (Code Location & Evidence)"
+      description: "请提供具体的 Commit SHA、文件路径、行号及危害分析"
+      placeholder: "Commit: ...\nFile: ...\nAnalysis: ..."
+    validations:
+      required: true

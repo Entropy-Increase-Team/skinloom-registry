@@ -1,0 +1,49 @@
+id: bs-importer
+kind: plugin
+runtime: native
+category: migration
+official: true
+name:
+  zh-CN: Blessing Skin 扩展迁移助手
+  en: Blessing Skin Extension Importer
+description:
+  zh-CN: 支持通过 MySQL/PostgreSQL 直连或 JSON 导出包将 Blessing Skin Server 第三方插件扩展表数据一键迁移至 SkinLoom
+  en: Import Blessing Skin Server third-party plugin extension tables into SkinLoom via direct MySQL/PostgreSQL connection or JSON archive
+authors:
+  - Entropy-Increase-Team
+license: MIT
+homepage: https://github.com/Entropy-Increase-Team/skinloom
+repository: https://github.com/Entropy-Increase-Team/skinloom
+subdir: plugins/bs-importer
+releases:
+  - version: 1.0.0
+    tag: plugins/bs-importer/v1.0.0
+    commit: 89abcdef0123456789abcdef0123456789abcdef
+    apiVersion: 1
+    nativeProtocolVersion: 1
+    targets:
+      - linux/amd64
+      - linux/arm64
+      - windows/amd64
+      - darwin/arm64
+      - darwin/amd64
+    engines:
+      skinloom: ">=1.0.0 <2.0.0"
+      go: ">=1.26.10"
+    permissions:
+      - native.exec
+      - storage.sql
+      - storage.docs
+      - http.stream
+      - users.read
+      - users.write
+      - players.read
+      - textures.write
+    dependencies: {}
+    optionalDependencies:
+      invitation-codes: "^1.0.0"
+      mojang-verification: "^1.0.0"
+    publishedAt: "2026-11-19T12:00:00Z"
+    yanked: false
+    changelog: |
+      - Initial official 5-platform release of Blessing Skin Extension Importer (Tier 2 Native Go).
