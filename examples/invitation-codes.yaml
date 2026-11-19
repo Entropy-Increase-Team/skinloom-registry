@@ -12,12 +12,12 @@ description:
 authors:
   - Entropy-Increase-Team
 license: MIT
-homepage: https://github.com/Entropy-Increase-Team/skinloom
-repository: https://github.com/Entropy-Increase-Team/skinloom
-subdir: plugins/invitation-codes
+homepage: https://github.com/Entropy-Increase-Team/skinloom-plugins
+repository: https://github.com/Entropy-Increase-Team/skinloom-plugins
+subdir: invitation-codes
 releases:
   - version: 1.0.0
-    tag: plugins/invitation-codes/v1.0.0
+    tag: invitation-codes/v1.0.0
     commit: 0123456789abcdef0123456789abcdef01234567
     apiVersion: 1
     engines:
