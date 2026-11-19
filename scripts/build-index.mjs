@@ -2,6 +2,7 @@
 /**
  * Builds and signs index.v1.json + index.v1.json.sig from manifests/*.yaml,
  * blocked.yaml, and compiled artifacts in dist/packages/<id>/<version>/.
+ * Also copies JSON Schemas into <outDir>/schema/ so schema $id URLs resolve live.
  */
 
 import crypto from 'node:crypto'
@@ -9,7 +10,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { parseSimpleYAML, validateManifestObject } from './validate-manifests.mjs'
+import { parseSimpleYAML, validateBlockedDoc, validateManifestObject } from './validate-manifests.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT_DIR = path.resolve(__dirname, '..')
@@ -41,6 +42,7 @@ export function buildRegistryIndex({
   artifactsDir = path.join(ROOT_DIR, 'dist', 'packages'),
   mirrors = DEFAULT_MIRRORS,
   privateKeyPem = process.env.SKINLOOM_REGISTRY_PRIVATE_KEY || '',
+  requireArtifacts = false,
 } = {}) {
   const manifestsDir = path.join(rootDir, 'manifests')
   const files = fs.existsSync(manifestsDir)
@@ -77,6 +79,8 @@ export function buildRegistryIndex({
             size: buf.length,
             ...(privateKeyPem ? { signature: signEd25519Base64(buf, privateKeyPem) } : {}),
           }
+        } else if (requireArtifacts && !rel.yanked) {
+          throw new Error(`Missing required artifact: ${pkgPath}`)
         }
       } else {
         const targets = Array.isArray(rel.targets) && rel.targets.length > 0 ? rel.targets : NATIVE_PLATFORMS
@@ -93,6 +97,8 @@ export function buildRegistryIndex({
               size: buf.length,
               ...(privateKeyPem ? { signature: signEd25519Base64(buf, privateKeyPem) } : {}),
             }
+          } else if (requireArtifacts && !rel.yanked) {
+            throw new Error(`Missing required native artifact for ${plat}: ${pkgPath}`)
           }
         }
       }
@@ -133,9 +139,11 @@ export function buildRegistryIndex({
   const blockedPath = path.join(rootDir, 'blocked.yaml')
   if (fs.existsSync(blockedPath)) {
     const blockedDoc = parseSimpleYAML(fs.readFileSync(blockedPath, 'utf8'))
-    if (Array.isArray(blockedDoc?.blocked)) {
-      blocked = blockedDoc.blocked
+    const errs = validateBlockedDoc(blockedDoc)
+    if (errs.length > 0) {
+      throw new Error(`Invalid blocked.yaml: ${errs.join('; ')}`)
     }
+    blocked = blockedDoc.blocked
   }
 
   const indexObj = {
@@ -152,13 +160,18 @@ export function buildRegistryIndex({
 }
 
 function main() {
-  const outDir = process.argv[2] ? path.resolve(process.argv[2]) : path.join(ROOT_DIR, 'dist')
-  const artifactsDir = process.argv[3] ? path.resolve(process.argv[3]) : path.join(outDir, 'packages')
+  const args = process.argv.slice(2)
+  const requireArtifacts = args.includes('--require-artifacts')
+  const positionals = args.filter((a) => !a.startsWith('--'))
+
+  const outDir = positionals[0] ? path.resolve(positionals[0]) : path.join(ROOT_DIR, 'dist')
+  const artifactsDir = positionals[1] ? path.resolve(positionals[1]) : path.join(outDir, 'packages')
   fs.mkdirSync(outDir, { recursive: true })
 
   const { indexBytes, indexSig } = buildRegistryIndex({
     rootDir: ROOT_DIR,
     artifactsDir,
+    requireArtifacts,
   })
   const indexPath = path.join(outDir, 'index.v1.json')
   fs.writeFileSync(indexPath, indexBytes)
@@ -170,6 +183,16 @@ function main() {
     console.log(`Wrote Ed25519 signature ${sigPath}`)
   } else {
     console.warn('Warning: SKINLOOM_REGISTRY_PRIVATE_KEY not set; skipped writing index.v1.json.sig')
+  }
+
+  // Publish JSON Schemas alongside index.v1.json so $id URLs resolve cleanly.
+  const schemaSrc = path.join(ROOT_DIR, 'schema')
+  if (fs.existsSync(schemaSrc)) {
+    const schemaDst = path.join(outDir, 'schema')
+    fs.mkdirSync(schemaDst, { recursive: true })
+    for (const name of fs.readdirSync(schemaSrc).filter((f) => f.endsWith('.json'))) {
+      fs.copyFileSync(path.join(schemaSrc, name), path.join(schemaDst, name))
+    }
   }
 }
 

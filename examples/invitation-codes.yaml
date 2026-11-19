@@ -23,7 +23,7 @@ releases:
     engines:
       skinloom: ">=1.0.0 <2.0.0"
     permissions:
-      - auth.guard
+      - admin.ui
       - storage.docs
       - users.read
       - score.write

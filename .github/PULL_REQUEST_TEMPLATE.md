@@ -10,7 +10,7 @@
 
 ## 权限与安全说明 (Permissions & Security Justification)
 
-> 若本次提交包含首次申请或新增的**敏感权限 (`sensitive`)** 或**高危权限 (`high_risk` / `native.exec` / `storage.sql` / `http.stream`)**，请在此逐条说明用途：
+> 若本次提交为**首次上架**、属于 **`runtime: "native"`**，或新增了**敏感权限**（如 `http.fetch`、`mail.send`、`*.write`、`storage.sql`、`http.stream`）或**高危权限**（`users.ban`、`auth.provider`、`auth.password`、`provider.storage`、`native.exec`），请在此逐条说明业务用途：
 
 - 
 
@@ -18,8 +18,8 @@
 
 ## 提交者自检清单 (Author Checklist)
 
-- [ ] `manifests/<id>.yaml` 中的 `commit` 为完整的 40 位小写十六进制 Git Commit SHA（非分支名或可变 Tag）。
-- [ ] 目标 Commit 下的 `plugin.json`（及主题的 `theme.json`）中的 `id`、`kind`、`runtime`、`version`、`permissions` 与本清单完全一致。
-- [ ] 已在本地运行 `node scripts/validate-manifests.mjs` 且零报错通过。
-- [ ] 已在插件/主题仓库运行 `npx skinloom-plugin lint` 与 `npx skinloom-plugin build`（原生插件已测试 `CGO_ENABLED=0` 编译与 `go test ./...`）且全部通过。
-- [ ] 仓库根目录包含开源许可证（如 MIT / Apache-2.0），且无任何混淆代码、远程未签名脚本加载或违规隐私回传逻辑。
+- [ ] `manifests/<id>.yaml` 中的 `repository` 使用 `https://`，且 `commit` 为完整的 40 位小写十六进制 Git Commit SHA（非分支名或可变 Tag）。
+- [ ] 目标 Commit 下的 `plugin.json` 中的 `id`、`kind`、`runtime`、`version`、`apiVersion`、`permissions` 与本清单完全一致。
+- [ ] 已在本仓库本地运行 `npm test && npm run validate`（及 `node scripts/audit-changed.mjs --manifest manifests/<id>.yaml`）且零报错通过。
+- [ ] 已在插件/主题源码仓库运行 `skinloom-plugin lint` 与 `skinloom-plugin build`（原生插件已通过 `CGO_ENABLED=0 go test ./...` 与 `go vet ./...`）。
+- [ ] 仓库根目录包含 OSI 开源许可证（如 MIT / Apache-2.0），且无混淆代码、远程未签名脚本加载或违规隐私回传逻辑。

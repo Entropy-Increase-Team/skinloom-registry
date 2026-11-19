@@ -1,0 +1,15 @@
+{
+  "name": "skinloom-registry",
+  "private": true,
+  "type": "module",
+  "description": "Official GitOps static signed plugin & theme registry for SkinLoom",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "validate": "node scripts/validate-manifests.mjs",
+    "audit": "node scripts/audit-changed.mjs",
+    "build": "node scripts/build-index.mjs",
+    "test": "node --test scripts/registry.test.mjs"
+  }
+}

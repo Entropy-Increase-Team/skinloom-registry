@@ -5,23 +5,41 @@ on:
     branches: [main]
     paths:
       - 'manifests/**'
+      - 'examples/**'
       - 'blocked.yaml'
       - 'schema/**'
       - 'scripts/**'
+      - 'package.json'
       - '.github/workflows/**'
+  push:
+    branches: [main]
+    paths:
+      - 'manifests/**'
+      - 'examples/**'
+      - 'blocked.yaml'
+      - 'schema/**'
+      - 'scripts/**'
+      - 'package.json'
+      - '.github/workflows/**'
+
+concurrency:
+  group: pr-check-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
-  pull-requests: write
-  security-events: write
 
 jobs:
   validate-manifests:
-    name: Validate Manifests & Tiered Security Gate
+    name: Validate Manifests, Unit Tests & Tiered Security Gate
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     outputs:
       needs_security_review: ${{ steps.validate.outputs.needs_security_review }}
       has_native: ${{ steps.validate.outputs.has_native }}
+      changed_count: ${{ steps.validate.outputs.changed_count }}
       manifests: ${{ steps.validate.outputs.manifests }}
     steps:
       - name: Checkout registry
@@ -29,70 +47,91 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: Validate manifest schema & permission tiers
-        id: validate
-        run: node scripts/validate-manifests.mjs
+      - name: Run registry validator & builder unit tests
+        run: npm test
 
-      - name: Attach needs-security-review label for Native / High-Risk / First Publish
-        if: steps.validate.outputs.needs_security_review == 'true' && github.event_name == 'pull_request'
+      - name: Validate manifests & compute diff-aware security gate
+        id: validate
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+            node scripts/validate-manifests.mjs --base "origin/${{ github.base_ref }}" --summary-md "$GITHUB_STEP_SUMMARY"
+          else
+            node scripts/validate-manifests.mjs --summary-md "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Attach needs-security-review label (same-repo PRs)
+        if: steps.validate.outputs.needs_security_review == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         uses: actions/github-script@v7
         with:
           script: |
-            await github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              labels: ['needs-security-review']
-            });
+            try {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: ['needs-security-review'],
+              });
+            } catch (err) {
+              core.warning(`Unable to attach label (expected on restricted tokens): ${err.message}`);
+            }
 
   audit-packages:
-    name: Isolated Source Checkout, Lint & Vulnerability Scan
+    name: Isolated Source Checkout, Consistency & Static Audit
     needs: validate-manifests
+    if: needs.validate-manifests.outputs.changed_count != '0'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout registry
         uses: actions/checkout@v4
 
-      - name: Setup Go 1.26.10+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup Go 1.26.10+ (for Native Go plugins)
+        if: needs.validate-manifests.outputs.has_native == 'true'
         uses: actions/setup-go@v5
         with:
           go-version: '^1.26.10'
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Initialize CodeQL for Go & JavaScript
-        uses: github/codeql-action/init@v3
-        with:
-          languages: go, javascript
-
-      - name: Audit each manifest at pinned commit SHA
-        env:
-          MANIFESTS_JSON: ${{ needs.validate-manifests.outputs.manifests }}
-        run: |
-          set -euo pipefail
-          node --input-type=module - << 'EOF'
-          import fs from 'node:fs';
-          import path from 'node:path';
-          import { parseSimpleYAML } from './scripts/validate-manifests.mjs';
-          for (const f of fs.readdirSync('manifests').filter((x) => /\.(ya?ml|json)$/i.test(x))) {
-            const doc = parseSimpleYAML(fs.readFileSync(path.join('manifests', f), 'utf8'));
-            const rel = doc.releases[0];
-            console.log(`Auditing ${doc.id}@${rel.version} (${doc.repository} @ ${rel.commit})`);
-          }
-          EOF
-
-      - name: Run govulncheck on Native Go plugins
+      - name: Install govulncheck (for Native Go plugins)
         if: needs.validate-manifests.outputs.has_native == 'true'
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@latest
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Checkout each changed release at pinned Commit SHA & audit
+        env:
+          MANIFESTS_JSON: ${{ needs.validate-manifests.outputs.manifests }}
+        run: node scripts/audit-changed.mjs
+
+  codeql-scan:
+    name: CodeQL Security Scan (Native / Protected Changes)
+    needs: validate-manifests
+    if: >-
+      (needs.validate-manifests.outputs.has_native == 'true' || needs.validate-manifests.outputs.needs_security_review == 'true') &&
+      (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout registry
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL for JavaScript
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3

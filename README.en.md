@@ -27,19 +27,20 @@ This repository is the canonical source for the **[SkinLoom](https://github.com/
 ## Supply-Chain Security Architecture
 
 ```text
-Author opens PR (manifests/<id>.yaml with public Git URL + immutable 40-char Commit SHA)
+Author opens PR (manifests/<id>.yaml with https:// Git URL + immutable 40-char Commit SHA)
         │
         ▼
 ┌──────────────────── 1. PR Validation & Tiered Audit (pr-check.yml) ─────────────┐
-│ • Schema & 40-char hex Commit SHA verification                                  │
-│ • Existing JS/Theme update without new elevated permissions → Automated AST lint │
-│ • New package / added sensitive or high-risk perms / Tier 2 Native Go plugin →  │
-│   Labeled needs-security-review + go vet + govulncheck + CodeQL + manual review │
+│ • Unit tests + Schema / Permission catalog / Commit SHA / Diff-aware gate       │
+│ • Isolated checkout of changed releases verifying plugin.json == manifest YAML  │
+│ • Existing JS/Theme update without new elevated permissions → Fast-track        │
+│ • First publish / elevated permission / Tier 2 Native Go → Manual review +      │
+│   go vet + govulncheck + CodeQL security scan                                   │
 └───────────────────────────────────────┬─────────────────────────────────────────┘
                                         │ Merged to main
                                         ▼
 ┌──────────────────── 2. Controlled Build & Ed25519 Signing (publish.yml) ────────┐
-│ • Isolated runner checks out exact Commit SHA (no pre-built binary archives)    │
+│ • Protected environment (production-signing) checks out exact Commit SHA        │
 │ • Tier 2 (Native Go) cross-compiled (CGO_ENABLED=0) for 5 OS/Arch targets       │
 │ • Official Ed25519 private key signs every .slp archive and index.v1.json       │
 └───────────────────────────────────────┬─────────────────────────────────────────┘
@@ -50,7 +51,7 @@ Author opens PR (manifests/<id>.yaml with public Git URL + immutable 40-char Com
                                         ▼
 ┌──────────────────── 3. Host Verification & 5D Compatibility Filter ─────────────┐
 │ • SkinLoom host verifies index.v1.json.sig & .slp against OfficialPublicKeyPEM  │
-│ • Matches apiVersion, host SemVer, GOOS/GOARCH, DB dialect, and dependency tree │
+│ • Matches apiVersion, host SemVer, GOOS/GOARCH, Go baseline & dependency tree   │
 │ • Enforces blocked.yaml every 6h: hot-disables revoked plugins & alerts admins  │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -60,14 +61,15 @@ Author opens PR (manifests/<id>.yaml with public Git URL + immutable 40-char Com
 ## Quick Submission Guide
 
 1. **Fork this repository** and create or update `manifests/<id>.yaml` (see [`examples/invitation-codes.yaml`](examples/invitation-codes.yaml) for Tier 1 JS/WASM or [`examples/bs-importer.yaml`](examples/bs-importer.yaml) for Tier 2 Native Go).
-2. Ensure `id`, `kind`, `runtime`, `version`, and `permissions` match your repository's `plugin.json`, and set `commit` to the **full 40-character lowercase hex Git Commit SHA**.
-3. Validate locally before opening a Pull Request:
+2. Ensure `id`, `kind`, `runtime`, `version`, `apiVersion`, and `permissions` match your repository's `plugin.json`, `repository` uses `https://`, and `commit` is the **full 40-character lowercase hex Git Commit SHA**.
+3. Validate locally (zero external dependencies, requires Node.js 22+):
    ```bash
-   # Validate all manifests in manifests/, examples/, and blocked.yaml
-   node scripts/validate-manifests.mjs
+   # Run registry script unit tests & manifest validation
+   npm test
+   npm run validate
 
-   # Build dist/index.v1.json locally
-   node scripts/build-index.mjs
+   # Simulate CI source checkout & plugin.json consistency check
+   node scripts/audit-changed.mjs --manifest manifests/<id>.yaml
    ```
 4. Open a Pull Request and complete the checklist. See **[CONTRIBUTING.md](CONTRIBUTING.md)** for full rules.
 
@@ -80,14 +82,16 @@ skinloom-registry/
 ├── .github/
 │   ├── ISSUE_TEMPLATE/                   # Malicious package report & submission help forms
 │   ├── workflows/                        # pr-check.yml (audit) & publish.yml (build + sign)
+│   ├── CODEOWNERS                        # Maintainer protection for registry infrastructure
 │   └── PULL_REQUEST_TEMPLATE.md          # Submission checklist
 ├── assets/
 │   └── icon.svg                          # SkinLoom brand icon
 ├── examples/                             # Reference manifests (Tier 1 JS & Tier 2 Native Go)
 ├── manifests/                            # Published package manifests (<id>.yaml)
 ├── schema/                               # JSON Schemas for manifests & index.v1.json
-├── scripts/                              # validate-manifests.mjs & build-index.mjs
+├── scripts/                              # validate-manifests, audit-changed, build-index, tests
 ├── blocked.yaml                          # Emergency security revocation blocklist
+├── package.json                          # Zero-dependency Node.js 22+ scripts
 ├── CONTRIBUTING.md                       # Detailed submission requirements
 ├── SECURITY.md                           # Security policy & emergency revocation SLA
 └── LICENSE                               # MIT License

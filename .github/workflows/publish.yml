@@ -6,24 +6,38 @@ on:
     paths:
       - 'manifests/**'
       - 'blocked.yaml'
+      - 'schema/**'
       - 'scripts/**'
   workflow_dispatch:
+    inputs:
+      force_rebuild:
+        description: 'Force rebuild all packages even if already present on dist branch'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: publish-registry
+  cancel-in-progress: false
 
 permissions:
   contents: write
 
 jobs:
   build-sign-publish:
-    name: Cross-Compile 5 Platforms, Sign & Sync R2 / Domestic Mirror
+    name: Cross-Compile 5 Platforms, Sign & Sync R2 / GitHub Mirror
     runs-on: ubuntu-latest
+    environment: production-signing
     env:
       SKINLOOM_REGISTRY_PRIVATE_KEY: ${{ secrets.SKINLOOM_REGISTRY_PRIVATE_KEY }}
+      SKINLOOM_CLI_REF: ${{ vars.SKINLOOM_CLI_REF || 'main' }}
       AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
       AWS_DEFAULT_REGION: auto
       R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
       R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
       CDN_PURGE_WEBHOOK_URL: ${{ secrets.CDN_PURGE_WEBHOOK_URL }}
+      FORCE_REBUILD: ${{ github.event.inputs.force_rebuild || 'false' }}
     steps:
       - name: Checkout registry repository
         uses: actions/checkout@v4
@@ -33,21 +47,58 @@ jobs:
         with:
           go-version: '^1.26.10'
 
-      - name: Setup Node.js
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: Validate all manifests before building
-        run: node scripts/validate-manifests.mjs
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Validate all manifests & run unit tests
+        run: |
+          npm test
+          node scripts/validate-manifests.mjs
+
+      - name: Restore previously published immutable packages from dist branch (incremental cache)
+        if: env.FORCE_REBUILD != 'true'
+        run: |
+          mkdir -p dist/packages
+          if git ls-remote --exit-code --heads origin dist >/dev/null 2>&1; then
+            git fetch --depth 1 origin dist:refs/remotes/origin/dist
+            mkdir -p /tmp/prev-dist
+            git archive origin/dist | tar -x -C /tmp/prev-dist || true
+            if [ -d /tmp/prev-dist/packages ]; then
+              cp -rn /tmp/prev-dist/packages/. dist/packages/ || true
+            fi
+            rm -rf /tmp/prev-dist
+          fi
+
+      - name: Prepare official @skinloom/cli toolchain
+        id: cli
+        run: |
+          LIVE_COUNT="$(find manifests -maxdepth 1 -type f \( -name '*.yaml' -o -name '*.yml' -o -name '*.json' \) | wc -l | tr -d ' ')"
+          echo "live_count=$LIVE_COUNT" >> "$GITHUB_OUTPUT"
+          if [ "$LIVE_COUNT" = "0" ]; then
+            echo "No live manifests in manifests/ yet; skipping CLI installation."
+            exit 0
+          fi
+          git clone --depth 1 --branch "$SKINLOOM_CLI_REF" https://github.com/Entropy-Increase-Team/skinloom.git /tmp/skinloom-toolchain
+          (cd /tmp/skinloom-toolchain/web && bun install --frozen-lockfile && bun run --filter @skinloom/cli build)
+          echo "cli_bin=/tmp/skinloom-toolchain/web/packages/cli/dist/bin.js" >> "$GITHUB_OUTPUT"
 
       - name: Cross-compile split-platform .slp packages & sign with Official Ed25519 Key
+        env:
+          CLI_BIN: ${{ steps.cli.outputs.cli_bin }}
         run: |
           set -euo pipefail
           mkdir -p dist/packages
           KEY_FILE=""
           if [ -n "${SKINLOOM_REGISTRY_PRIVATE_KEY:-}" ]; then
             KEY_FILE="$(mktemp)"
+            chmod 600 "$KEY_FILE"
             trap 'rm -f "$KEY_FILE"' EXIT
             printf '%s\n' "$SKINLOOM_REGISTRY_PRIVATE_KEY" > "$KEY_FILE"
           fi
@@ -57,8 +108,19 @@ jobs:
           import path from 'node:path';
           import { execFileSync } from 'node:child_process';
           import { parseSimpleYAML } from './scripts/validate-manifests.mjs';
+          import { verifyPluginJsonMatchesManifest } from './scripts/audit-changed.mjs';
 
           const keyFile = process.argv[2] || '';
+          const cliBin = process.env.CLI_BIN || '';
+          const forceRebuild = process.env.FORCE_REBUILD === 'true';
+          const defaultTargets = [
+            'linux/amd64',
+            'linux/arm64',
+            'windows/amd64',
+            'darwin/arm64',
+            'darwin/amd64',
+          ];
+
           const files = fs.existsSync('manifests')
             ? fs.readdirSync('manifests').filter((f) => /\.(ya?ml|json)$/i.test(f)).sort()
             : [];
@@ -70,35 +132,69 @@ jobs:
           if (!keyFile) {
             throw new Error('SKINLOOM_REGISTRY_PRIVATE_KEY secret is required to sign official packages.');
           }
+          if (!cliBin || !fs.existsSync(cliBin)) {
+            throw new Error(`@skinloom/cli binary not found at "${cliBin}"`);
+          }
 
           for (const file of files) {
             const doc = parseSimpleYAML(fs.readFileSync(path.join('manifests', file), 'utf8'));
+            const rt = doc.runtime || 'js';
             for (const rel of doc.releases) {
               if (rel.yanked) continue;
               const outDir = path.resolve('dist/packages', doc.id, rel.version);
               fs.mkdirSync(outDir, { recursive: true });
+
+              const targets = rt === 'native'
+                ? (Array.isArray(rel.targets) && rel.targets.length > 0 ? rel.targets : defaultTargets)
+                : [];
+              const expectedFiles = rt === 'native'
+                ? targets.map((t) => `${doc.id}-${rel.version}-${t.replace('/', '-')}.slp`)
+                : [`${doc.id}-${rel.version}.slp`];
+
+              if (!forceRebuild && expectedFiles.every((f) => fs.existsSync(path.join(outDir, f)))) {
+                console.log(`[CACHE] Reusing immutable signed artifacts for ${doc.id}@${rel.version}`);
+                continue;
+              }
+
               const workDir = fs.mkdtempSync('/tmp/skinloom-reg-build-');
               try {
+                console.log(`[BUILD] Compiling & signing ${doc.id}@${rel.version} (${doc.repository} @ ${rel.commit})`);
                 execFileSync('git', ['init', workDir], { stdio: 'inherit' });
                 execFileSync('git', ['-C', workDir, 'remote', 'add', 'origin', doc.repository], { stdio: 'inherit' });
                 execFileSync('git', ['-C', workDir, 'fetch', '--depth', '1', 'origin', rel.commit], { stdio: 'inherit' });
                 execFileSync('git', ['-C', workDir, 'checkout', '--detach', 'FETCH_HEAD'], { stdio: 'inherit' });
 
-                const pkgDir = doc.subdir ? path.resolve(workDir, doc.subdir) : path.resolve(workDir);
                 const rootResolved = path.resolve(workDir);
+                const pkgDir = doc.subdir ? path.resolve(workDir, doc.subdir) : rootResolved;
                 if (pkgDir !== rootResolved && !pkgDir.startsWith(rootResolved + path.sep)) {
                   throw new Error(`Invalid subdir escaping workspace: ${doc.subdir}`);
                 }
-                const args = ['skinloom-plugin', 'pack', pkgDir, '--sign', keyFile];
-                if (doc.runtime === 'native') {
-                  const targets = Array.isArray(rel.targets) && rel.targets.length > 0
-                    ? rel.targets.join(',')
-                    : 'linux/amd64,linux/arm64,windows/amd64,darwin/arm64,darwin/amd64';
-                  args.push('--native', '--split-platforms', '--targets', targets, '--out', path.join(outDir, `${doc.id}-${rel.version}.slp`));
+
+                // Re-verify plugin.json consistency right before compiling & signing
+                const pluginJson = JSON.parse(fs.readFileSync(path.join(pkgDir, 'plugin.json'), 'utf8'));
+                const mismatch = verifyPluginJsonMatchesManifest(doc, rel, pluginJson);
+                if (mismatch.length > 0) {
+                  throw new Error(`Refusing to sign ${doc.id}@${rel.version}: ${mismatch.join('; ')}`);
+                }
+
+                if (fs.existsSync(path.join(pkgDir, 'package.json'))) {
+                  execFileSync('bun', ['install'], { cwd: pkgDir, stdio: 'inherit' });
+                }
+
+                const args = [cliBin, 'pack', '--dir', pkgDir, '--key', keyFile];
+                if (rt === 'native') {
+                  args.push(
+                    '--native',
+                    '--split-platforms',
+                    '--targets',
+                    targets.join(','),
+                    '--out-dir',
+                    outDir,
+                  );
                 } else {
                   args.push('--out', path.join(outDir, `${doc.id}-${rel.version}.slp`));
                 }
-                execFileSync('npx', args, {
+                execFileSync(process.execPath, args, {
                   stdio: 'inherit',
                   env: { ...process.env, CGO_ENABLED: '0' },
                 });
@@ -110,7 +206,7 @@ jobs:
           EOF
 
       - name: Generate and sign index.v1.json + index.v1.json.sig
-        run: node scripts/build-index.mjs dist dist/packages
+        run: node scripts/build-index.mjs dist dist/packages --require-artifacts
 
       - name: Publish dist/ to GitHub fallback branch (dist)
         if: env.SKINLOOM_REGISTRY_PRIVATE_KEY != ''
@@ -132,6 +228,9 @@ jobs:
           aws s3 sync dist/packages "s3://${R2_BUCKET_NAME}/packages" \
             --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com" \
             --cache-control "public, max-age=31536000, immutable"
+          aws s3 sync dist/schema "s3://${R2_BUCKET_NAME}/schema" \
+            --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com" \
+            --cache-control "public, max-age=3600"
           aws s3 cp dist/index.v1.json "s3://${R2_BUCKET_NAME}/index.v1.json" \
             --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com" \
             --cache-control "public, max-age=60"

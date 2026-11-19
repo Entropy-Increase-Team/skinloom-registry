@@ -1,0 +1,5 @@
+# Security-sensitive registry paths require maintainer review.
+/blocked.yaml @Entropy-Increase-Team/maintainers
+/scripts/ @Entropy-Increase-Team/maintainers
+/schema/ @Entropy-Increase-Team/maintainers
+/.github/ @Entropy-Increase-Team/maintainers
