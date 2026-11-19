@@ -1,0 +1,40 @@
+id: mojang-verification
+kind: plugin
+runtime: js
+category: auth
+official: true
+name:
+  zh-CN: Minecraft 正版认证
+  en: Mojang / Microsoft Verification
+description:
+  zh-CN: 通过 Microsoft / Xbox Live OAuth 验证 Minecraft 正版账号，自动处理同名角色冲突、颁发正版徽章并支持积分奖励
+  en: Verify official Minecraft Java Edition ownership via Microsoft / Xbox Live OAuth, reclaim conflicting player names, award verified badges, and grant score rewards
+authors:
+  - Entropy-Increase-Team
+license: MIT
+homepage: https://github.com/Entropy-Increase-Team/skinloom-plugins
+repository: https://github.com/Entropy-Increase-Team/skinloom-plugins
+subdir: mojang-verification
+releases:
+  - version: 1.0.0
+    commit: ec430981efaacc48ca8d89624cada3a53c35d13f
+    apiVersion: 1
+    engines:
+      skinloom: ">=0.1.0 <2.0.0"
+    permissions:
+      - storage.docs
+      - storage.kv
+      - http.fetch
+      - users.read
+      - players.read
+      - players.write
+      - score.write
+      - notify.send
+      - mail.send
+    dependencies: {}
+    optionalDependencies: {}
+    publishedAt: "2026-11-19T13:00:00Z"
+    yanked: false
+    changelog: |
+      - Initial official release of Mojang / Microsoft Verification plugin (Tier 1 JS/WASM sandbox).
+      - Supports Microsoft OAuth -> XBL -> XSTS -> Minecraft profile verification, conflict player reclamation with refund & notifications, verified badges, and BS extension import service.

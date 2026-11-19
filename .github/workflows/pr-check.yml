@@ -3,14 +3,6 @@ name: Registry PR Audit & Security Check
 on:
   pull_request:
     branches: [main]
-    paths:
-      - 'manifests/**'
-      - 'examples/**'
-      - 'blocked.yaml'
-      - 'schema/**'
-      - 'scripts/**'
-      - 'package.json'
-      - '.github/workflows/**'
   push:
     branches: [main]
     paths:
@@ -47,10 +39,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js 22
+      - name: Setup Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
 
       - name: Run registry validator & builder unit tests
         run: npm test
@@ -92,10 +84,10 @@ jobs:
       - name: Checkout registry
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 22
+      - name: Setup Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
 
       - name: Setup Go 1.26.10+ (for Native Go plugins)
         if: needs.validate-manifests.outputs.has_native == 'true'

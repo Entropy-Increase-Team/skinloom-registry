@@ -31,7 +31,7 @@ SkinLoom 宿主内置的官方市场 Ed25519 公钥（定义于 `internal/plugin
 
 ```pem
 -----BEGIN PUBLIC KEY-----
-MCowBQYDK2VwAyEAPD8bUrzAGLNF5McmIr+DEtQ9y+0q/9/FMMUSSiWRcVY=
+MCowBQYDK2VwAyEAw8HIDMjyzCMx8asCu1gY4+jELLPbsVcwCbig9AyHm4g=
 -----END PUBLIC KEY-----
 ```
 
