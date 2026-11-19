@@ -87,7 +87,7 @@ jobs:
           fi
           git clone --depth 1 --branch "$SKINLOOM_CLI_REF" https://github.com/Entropy-Increase-Team/skinloom.git /tmp/skinloom-toolchain
           (cd /tmp/skinloom-toolchain/web && bun install --frozen-lockfile && bun run --filter @skinloom/cli build)
-          echo "cli_bin=/tmp/skinloom-toolchain/web/packages/cli/dist/bin.js" >> "$GITHUB_OUTPUT"
+          echo "cli_bin=/tmp/skinloom-toolchain/web/packages/cli/bin/skinloom-plugin.mjs" >> "$GITHUB_OUTPUT"
 
       - name: Cross-compile split-platform .slp packages & sign with Official Ed25519 Key
         env:
