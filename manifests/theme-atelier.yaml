@@ -1,0 +1,31 @@
+id: theme-atelier
+kind: theme
+runtime: js
+category: theme
+official: true
+name:
+  zh-CN: 工坊 · Atelier
+  en: Atelier
+description:
+  zh-CN: 官方五层主题示范包：暖陶配色 Token、分栏登录与顶部标签用户中心、主题设置、自由 CSS 与 Level ⑤ 页脚/材质卡片组件覆盖
+  en: Official Level 5 reference theme featuring warm terracotta tokens, split auth & tab user center layouts, theme settings, CSS, and site.footer / texture.card component overrides
+authors:
+  - Entropy-Increase-Team
+license: MIT
+homepage: https://github.com/Entropy-Increase-Team/skinloom-plugins
+repository: https://github.com/Entropy-Increase-Team/skinloom-plugins
+subdir: theme-atelier
+releases:
+  - version: 1.0.0
+    commit: ec430981efaacc48ca8d89624cada3a53c35d13f
+    apiVersion: 1
+    engines:
+      skinloom: ">=0.1.0 <2.0.0"
+    permissions: []
+    dependencies: {}
+    optionalDependencies: {}
+    publishedAt: "2026-11-19T13:00:00Z"
+    yanked: false
+    changelog: |
+      - Initial official release of Atelier Level 5 reference theme.
+      - Includes warm terracotta light/dark tokens, split auth & tabbed user center layouts, theme settings, custom CSS, and site.footer / texture.card overrides.

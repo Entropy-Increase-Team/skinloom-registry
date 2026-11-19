@@ -1,0 +1,35 @@
+id: invitation-codes
+kind: plugin
+runtime: js
+category: security
+official: true
+name:
+  zh-CN: 邀请码注册
+  en: Invitation Codes
+description:
+  zh-CN: 要求用户提供有效邀请码方可注册账号，支持次数限制、过期时间、积分兑换邀请码与管理员批量生成导出
+  en: Require or reward invitation codes during registration, with usage limits, expiration dates, user score redemption, and bulk admin export
+authors:
+  - Entropy-Increase-Team
+license: MIT
+homepage: https://github.com/Entropy-Increase-Team/skinloom-plugins
+repository: https://github.com/Entropy-Increase-Team/skinloom-plugins
+subdir: invitation-codes
+releases:
+  - version: 1.0.0
+    commit: ec430981efaacc48ca8d89624cada3a53c35d13f
+    apiVersion: 1
+    engines:
+      skinloom: ">=0.1.0 <2.0.0"
+    permissions:
+      - admin.ui
+      - storage.docs
+      - users.read
+      - score.write
+    dependencies: {}
+    optionalDependencies: {}
+    publishedAt: "2026-11-19T13:00:00Z"
+    yanked: false
+    changelog: |
+      - Initial official release of Invitation Codes plugin (Tier 1 JS/WASM sandbox).
+      - Supports registration guard, usage/expiry limits, user score redemption, bulk admin generation & CSV export, and BS extension import service.

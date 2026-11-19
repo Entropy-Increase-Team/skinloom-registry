@@ -42,15 +42,15 @@ jobs:
       - name: Checkout registry repository
         uses: actions/checkout@v4
 
-      - name: Setup Go 1.26.10+
+      - name: Setup Go 1.27+
         uses: actions/setup-go@v5
         with:
-          go-version: '^1.26.10'
+          go-version: '1.27.x'
 
-      - name: Setup Node.js 22
+      - name: Setup Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -177,8 +177,15 @@ jobs:
                   throw new Error(`Refusing to sign ${doc.id}@${rel.version}: ${mismatch.join('; ')}`);
                 }
 
-                if (fs.existsSync(path.join(pkgDir, 'package.json'))) {
-                  execFileSync('bun', ['install'], { cwd: pkgDir, stdio: 'inherit' });
+                const pkgJsonPath = path.join(pkgDir, 'package.json');
+                if (fs.existsSync(pkgJsonPath)) {
+                  const pkgJson = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf8'));
+                  const hasDeps =
+                    (pkgJson.dependencies && Object.keys(pkgJson.dependencies).length > 0) ||
+                    (pkgJson.devDependencies && Object.keys(pkgJson.devDependencies).length > 0);
+                  if (hasDeps) {
+                    execFileSync('bun', ['install'], { cwd: pkgDir, stdio: 'inherit' });
+                  }
                 }
 
                 const args = [cliBin, 'pack', '--dir', pkgDir, '--key', keyFile];
@@ -214,10 +221,13 @@ jobs:
           set -euo pipefail
           git config user.name "skinloom-registry-bot"
           git config user.email "registry-bot@skinloom.cn"
+          rm -rf /tmp/dist-publish-staging
+          mv dist /tmp/dist-publish-staging
           git checkout --orphan dist-publish
           git rm -rf .
-          cp -r dist/* .
-          rm -rf dist
+          git clean -fdx
+          cp -r /tmp/dist-publish-staging/. .
+          rm -rf /tmp/dist-publish-staging
           git add -A
           git commit -m "chore(registry): publish signed index.v1.json (${GITHUB_SHA::7})"
           git push -f origin dist-publish:dist
