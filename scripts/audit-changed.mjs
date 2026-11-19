@@ -124,9 +124,9 @@ function auditSingleRelease(manifestDoc, releaseSpec) {
         stdio: 'inherit',
         env: { ...process.env, CGO_ENABLED: '0' },
       })
-      if (hasCommand('govulncheck')) {
+      if (process.env.SKINLOOM_RUN_GOVULNCHECK === '1' || hasCommand('govulncheck')) {
         console.log(`  Running govulncheck ./... in ${manifestDoc.id}`)
-        execFileSync('govulncheck', ['./...'], {
+        execFileSync('go', ['run', 'golang.org/x/vuln/cmd/govulncheck@latest', './...'], {
           cwd: pkgDir,
           stdio: 'inherit',
           env: { ...process.env, CGO_ENABLED: '0' },
