@@ -16,6 +16,34 @@ homepage: https://github.com/Entropy-Increase-Team/skinloom-plugins
 repository: https://github.com/Entropy-Increase-Team/skinloom-plugins
 subdir: mojang-verification
 releases:
+  - version: 1.0.1
+    commit: a95c3cfcc5c460b35ada1dd1a5f037fe433dfaf4
+    apiVersion: 1
+    engines:
+      skinloom: ">=0.1.0 <2.0.0"
+    permissions:
+      - storage.docs
+      - storage.kv
+      - http.fetch
+      - users.read
+      - players.read
+      - players.write
+      - score.write
+      - notify.send
+      - mail.send
+    dependencies: {}
+    optionalDependencies: {}
+    publishedAt: "2026-11-20T06:52:00Z"
+    yanked: false
+    changelog:
+      zh-CN: |
+        - 安全修复：将 OAuth state 销毁移至用户归属校验之后，防止跨用户伪造回调提前失效合法验证会话。
+        - 补全 Microsoft/Xbox/Mojang 认证全链路中英双语提示，同名角色回收站内信与邮件按原号主语言发送。
+        - 正版徽章文字默认留空自动跟随访客语言，优化卡片窄屏布局、错误状态展示与移动端触控热区。
+      en: |
+        - Security fix: delete OAuth state only after verifying user ownership to prevent cross-user state invalidation.
+        - Completed bilingual zh-CN/en localization for OAuth errors and localized conflict reclamation notifications/emails to the previous owner's locale.
+        - Made verified badge text follow visitor locale by default when blank, and improved mobile layout and error states.
   - version: 1.0.0
     commit: ec430981efaacc48ca8d89624cada3a53c35d13f
     apiVersion: 1

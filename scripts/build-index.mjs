@@ -37,6 +37,32 @@ function signEd25519Base64(dataBuffer, privateKeyPem) {
   return crypto.sign(null, dataBuffer, privKey).toString('base64')
 }
 
+function normalizeChangelogFields(raw) {
+  if (!raw) return {}
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim()
+    return trimmed ? { changelog: trimmed } : {}
+  }
+  if (typeof raw === 'object' && !Array.isArray(raw)) {
+    const map = {}
+    for (const [k, v] of Object.entries(raw)) {
+      if (typeof v === 'string' && v.trim()) {
+        map[k] = v.trim()
+      }
+    }
+    const keys = Object.keys(map)
+    if (keys.length === 0) return {}
+    // Keep `changelog` as a plain string for backward compatibility with older SkinLoom hosts,
+    // while publishing the full localized map in `changelogI18n`.
+    const fallback = map['zh-CN'] || map.en || map[keys[0]]
+    return {
+      changelog: fallback,
+      changelogI18n: map,
+    }
+  }
+  return {}
+}
+
 export function buildRegistryIndex({
   rootDir = ROOT_DIR,
   artifactsDir = path.join(ROOT_DIR, 'dist', 'packages'),
@@ -113,7 +139,7 @@ export function buildRegistryIndex({
         optionalDependencies: rel.optionalDependencies || {},
         publishedAt: rel.publishedAt || new Date().toISOString(),
         yanked: Boolean(rel.yanked),
-        ...(rel.changelog ? { changelog: rel.changelog } : {}),
+        ...normalizeChangelogFields(rel.changelog),
         artifacts,
       })
     }

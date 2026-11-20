@@ -16,6 +16,23 @@ homepage: https://github.com/Entropy-Increase-Team/skinloom-plugins
 repository: https://github.com/Entropy-Increase-Team/skinloom-plugins
 subdir: theme-atelier
 releases:
+  - version: 1.0.1
+    commit: a95c3cfcc5c460b35ada1dd1a5f037fe433dfaf4
+    apiVersion: 1
+    engines:
+      skinloom: ">=0.1.0 <2.0.0"
+    permissions: []
+    dependencies: {}
+    optionalDependencies: {}
+    publishedAt: "2026-11-20T06:52:00Z"
+    yanked: false
+    changelog:
+      zh-CN: |
+        - 材质卡片类型标签（经典/纤细/披风）支持中英双语展示，页脚标语留空时自动跟随站点语言。
+        - 优化材质卡片徽章字号、换行与窄屏文本截断表现。
+      en: |
+        - Localized texture type badges (Classic/Slim/Cape) and made blank footer tagline follow site locale automatically.
+        - Refined texture card badge sizing, wrapping, and narrow-screen text truncation.
   - version: 1.0.0
     commit: ec430981efaacc48ca8d89624cada3a53c35d13f
     apiVersion: 1

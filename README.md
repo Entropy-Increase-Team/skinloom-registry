@@ -115,8 +115,11 @@ releases:
     optionalDependencies: {}
     publishedAt: "2026-11-19T12:00:00Z"
     yanked: false
-    changelog: |
-      - 首个正式版本发布
+    changelog:
+      zh-CN: |
+        - 首个正式版本发布
+      en: |
+        - Initial official release
 ```
 
 > **原生插件提示**：对于 `runtime: "native"` 的 Go 原生插件，还需在 `releases[*]` 中声明 `nativeProtocolVersion: 1`、`engines.go` 与 `targets`（5 大目标平台），详见 [`examples/bs-importer.yaml`](examples/bs-importer.yaml)。

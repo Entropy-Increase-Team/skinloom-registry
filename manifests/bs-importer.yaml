@@ -16,6 +16,42 @@ homepage: https://github.com/Entropy-Increase-Team/skinloom-plugins
 repository: https://github.com/Entropy-Increase-Team/skinloom-plugins
 subdir: bs-importer
 releases:
+  - version: 1.0.1
+    commit: a95c3cfcc5c460b35ada1dd1a5f037fe433dfaf4
+    apiVersion: 1
+    nativeProtocolVersion: 1
+    targets:
+      - linux/amd64
+      - linux/arm64
+      - windows/amd64
+      - darwin/arm64
+      - darwin/amd64
+    engines:
+      skinloom: ">=0.1.0 <2.0.0"
+      go: ">=1.26.10"
+    permissions:
+      - admin.ui
+      - native.exec
+      - storage.sql
+      - http.stream
+      - users.read
+      - textures.read
+    dependencies: {}
+    optionalDependencies:
+      invitation-codes: "^1.0.0"
+      mojang-verification: "^1.0.0"
+      texture-description: "^1.0.0"
+    publishedAt: "2026-11-20T06:52:00Z"
+    yanked: false
+    changelog:
+      zh-CN: |
+        - 补全前后端与 SSE 实时进度流中英双语本地化（模式、任务状态、错误提示、表名与错误明细）。
+        - 加固导出桥接重定向校验，拒绝非 http/https 协议跳转，并将 Go SDK 依赖升级至 skinloom v1.1.0。
+        - 优化管理页交互：补齐驱动下拉项标签、错误明细超 20 条折叠提示、查询失败 Alert 与移动端触控热区。
+      en: |
+        - Completed bilingual zh-CN/en localization across backend routes, SSE progress streams, job statuses, and UI labels.
+        - Hardened Export Bridge redirect handling to reject non-http/https schemes and aligned Go SDK dependency with skinloom v1.1.0.
+        - Improved admin UI with Base UI Select item labels, >20 error summary hint, query error alerts, and mobile touch targets.
   - version: 1.0.0
     commit: ec430981efaacc48ca8d89624cada3a53c35d13f
     apiVersion: 1
