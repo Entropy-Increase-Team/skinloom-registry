@@ -1,0 +1,37 @@
+{
+  "id": "bs-importer",
+  "version": "1.0.1",
+  "runtime": "native",
+  "artifacts": {
+    "darwin/amd64": {
+      "file": "bs-importer-1.0.1-darwin-amd64.slp",
+      "sha256": "346f914a020d57c2a5576988a34614b86f69445d60646a4736a9a3990d38f5e8",
+      "size": 9348556,
+      "signature": "DTmfdN4jEgS930hBrNBq4VWUFt1uss8ju86W/RhUv8HaGfPCP9SMdvS2YFEzuhoEUlR1p+vUDWNdwdaejjDiDg=="
+    },
+    "darwin/arm64": {
+      "file": "bs-importer-1.0.1-darwin-arm64.slp",
+      "sha256": "0863564b22612dfce3369e790702a60a3284c4d68e0e3f954a5650d745788cbe",
+      "size": 8833412,
+      "signature": "niKL1ahvnKUV+0aGpKSXCtnM2HR3IvnLm2z/o+R20+EXw0BwTtbP6gNARTBnOMFHCw4vQVpAcxXe957BJ2FhBg=="
+    },
+    "linux/amd64": {
+      "file": "bs-importer-1.0.1-linux-amd64.slp",
+      "sha256": "5249d3b18da67badecc9fa3c6e6a879ff4f6b263d0728c332d3efb2e5a159fe2",
+      "size": 9242316,
+      "signature": "OT67URLwNrOW4+AdaNuQni0FE6AcBdBcUSAhXos/8kuEZ/BKrvAvbR1628mpnJh3TuqqudYQ38tc/VX7iyHADg=="
+    },
+    "linux/arm64": {
+      "file": "bs-importer-1.0.1-linux-arm64.slp",
+      "sha256": "9f5d18ac5df091e5f77c37867bc1bb7f1bd1ff02e1dc8a9758c49cb1ed3810ff",
+      "size": 8537393,
+      "signature": "24IuqBaoEEv0gemGJj6bvRHj4i2oz+4PKjfskaMIGASrpl2X5H4BhLc3j6seoGeesfWThT1wce3/WtazrxmVAA=="
+    },
+    "windows/amd64": {
+      "file": "bs-importer-1.0.1-windows-amd64.slp",
+      "sha256": "c3f9f3495b148c841cdf4d6f2842b51044ffadd1f03c4dec0ae943dac76072c5",
+      "size": 9394383,
+      "signature": "e4n4/WfRDA25PQG0Qf/QNGVHMMiMg5MIk/0pjFCrdiflgqVg6aU3o7djUM4BM9W5Iz6nXJgZKexSkW+lkbu/Dw=="
+    }
+  }
+}
