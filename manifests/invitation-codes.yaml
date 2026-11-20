@@ -16,6 +16,29 @@ homepage: https://github.com/Entropy-Increase-Team/skinloom-plugins
 repository: https://github.com/Entropy-Increase-Team/skinloom-plugins
 subdir: invitation-codes
 releases:
+  - version: 1.0.1
+    commit: a95c3cfcc5c460b35ada1dd1a5f037fe433dfaf4
+    apiVersion: 1
+    engines:
+      skinloom: ">=0.1.0 <2.0.0"
+    permissions:
+      - admin.ui
+      - storage.docs
+      - users.read
+      - score.write
+    dependencies: {}
+    optionalDependencies: {}
+    publishedAt: "2026-11-20T06:52:00Z"
+    yanked: false
+    changelog:
+      zh-CN: |
+        - 补全注册拦截、管理员接口与玩家自助兑换全链路中英双语错误提示与状态标签。
+        - 新增删除邀请码确认弹窗，默认前缀/次数/有效期自动读取插件设置，并补充导入空白备注兜底。
+        - 优化移动端按钮触控热区、状态筛选条横向滚动与列表加载失败告警展示。
+      en: |
+        - Completed bilingual zh-CN/en localization for registration guards, admin/user API errors, and status badges.
+        - Added delete confirmation dialog, initialized generator defaults from plugin settings, and handled blank imported notes cleanly.
+        - Improved mobile touch targets, horizontal tab scrolling, and query error alerts.
   - version: 1.0.0
     commit: ec430981efaacc48ca8d89624cada3a53c35d13f
     apiVersion: 1

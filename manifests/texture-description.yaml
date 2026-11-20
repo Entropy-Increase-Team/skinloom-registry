@@ -16,6 +16,26 @@ homepage: https://github.com/Entropy-Increase-Team/skinloom-plugins
 repository: https://github.com/Entropy-Increase-Team/skinloom-plugins
 subdir: texture-description
 releases:
+  - version: 1.0.1
+    commit: a95c3cfcc5c460b35ada1dd1a5f037fe433dfaf4
+    apiVersion: 1
+    engines:
+      skinloom: ">=0.1.0 <2.0.0"
+    permissions:
+      - storage.docs
+      - storage.kv
+      - textures.read
+    dependencies: {}
+    optionalDependencies: {}
+    publishedAt: "2026-11-20T06:52:00Z"
+    yanked: false
+    changelog:
+      zh-CN: |
+        - 补全上传校验与详情页编辑接口的中英双语错误提示。
+        - 前端编辑框动态读取插件 maxLength 配置并展示实时字数统计，优化长文本换行与移动端触控热区。
+      en: |
+        - Completed bilingual zh-CN/en localization for upload guard and detail editing API errors.
+        - Synced frontend textarea maxLength with plugin settings, added live character counter, and improved word wrapping and mobile touch targets.
   - version: 1.0.0
     commit: ec430981efaacc48ca8d89624cada3a53c35d13f
     apiVersion: 1
