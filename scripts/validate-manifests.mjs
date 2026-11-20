@@ -346,6 +346,20 @@ export function validateManifestObject(doc, fileName) {
       if (Number(rel.apiVersion) !== 1) {
         errors.push(`release ${rel.version}: apiVersion must be 1`)
       }
+      if (rel.changelog !== undefined) {
+        if (typeof rel.changelog === 'string') {
+          if (!rel.changelog.trim()) {
+            errors.push(`release ${rel.version}: changelog must not be empty`)
+          }
+        } else if (rel.changelog && typeof rel.changelog === 'object' && !Array.isArray(rel.changelog)) {
+          const entries = Object.entries(rel.changelog)
+          if (entries.length === 0 || entries.some(([k, v]) => !k.trim() || typeof v !== 'string' || !v.trim())) {
+            errors.push(`release ${rel.version}: localized changelog must map locale keys to non-empty strings`)
+          }
+        } else {
+          errors.push(`release ${rel.version}: changelog must be a string or localized { locale: string } mapping`)
+        }
+      }
       if (rel.permissions !== undefined) {
         if (!Array.isArray(rel.permissions)) {
           errors.push(`release ${rel.version}: permissions must be an array`)

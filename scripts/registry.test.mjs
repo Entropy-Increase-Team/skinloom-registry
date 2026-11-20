@@ -196,6 +196,9 @@ releases:
     apiVersion: 1
     permissions:
       - storage.kv
+    changelog:
+      zh-CN: "首个正式版本"
+      en: "Initial release"
 `,
     )
     fs.writeFileSync(path.join(tmp, 'blocked.yaml'), 'blocked: []\n')
@@ -218,6 +221,11 @@ releases:
     })
 
     assert.equal(indexObj.packages.length, 1)
+    assert.equal(indexObj.packages[0].versions[0].changelog, '首个正式版本')
+    assert.deepEqual(indexObj.packages[0].versions[0].changelogI18n, {
+      'zh-CN': '首个正式版本',
+      en: 'Initial release',
+    })
     assert.ok(indexObj.packages[0].versions[0].artifacts.any)
     assert.ok(
       crypto.verify(null, indexBytes, crypto.createPublicKey(publicKey), Buffer.from(indexSig, 'base64')),
@@ -239,4 +247,44 @@ test('validateBlockedDoc rejects empty reasons or invalid IDs', () => {
   assert.deepEqual(validateBlockedDoc({ blocked: [] }), [])
   const errs = validateBlockedDoc({ blocked: [{ id: 'BAD_ID', reason: '' }] })
   assert.equal(errs.length, 2)
+})
+
+test('localized multiline YAML changelog parses, validates, and rejects empty entries', () => {
+  const valid = parseSimpleYAML(`id: i18n-changelog
+kind: plugin
+runtime: js
+category: utility
+name:
+  zh-CN: 双语日志示例
+  en: Bilingual Changelog Demo
+description:
+  zh-CN: 示例描述
+  en: Demo description
+authors:
+  - Team
+license: MIT
+repository: https://github.com/example/i18n-changelog
+releases:
+  - version: 1.0.1
+    commit: 0123456789abcdef0123456789abcdef01234567
+    apiVersion: 1
+    changelog:
+      zh-CN: |
+        - 补全前后端中英双语提示
+        - 优化移动端按钮热区
+      en: |
+        - Complete bilingual backend & frontend localization
+        - Improve mobile touch targets
+`)
+  assert.deepEqual(validateManifestObject(valid, 'i18n-changelog.yaml'), [])
+  assert.equal(valid.releases[0].changelog['zh-CN'], '- 补全前后端中英双语提示\n- 优化移动端按钮热区')
+  assert.equal(
+    valid.releases[0].changelog.en,
+    '- Complete bilingual backend & frontend localization\n- Improve mobile touch targets',
+  )
+
+  const invalid = structuredClone(valid)
+  invalid.releases[0].changelog = { 'zh-CN': '有效说明', en: '   ' }
+  const errs = validateManifestObject(invalid, 'i18n-changelog.yaml')
+  assert.ok(errs.some((e) => e.includes('localized changelog')))
 })
