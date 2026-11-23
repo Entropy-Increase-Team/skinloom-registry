@@ -1,0 +1,37 @@
+{
+  "id": "mua-union",
+  "version": "1.0.0",
+  "runtime": "native",
+  "artifacts": {
+    "darwin/amd64": {
+      "file": "mua-union-1.0.0-darwin-amd64.slp",
+      "sha256": "b3c1b729e6872b5038d6deae5231fe1677428d4bb8a9f8f095a34a527eb9ec58",
+      "size": 9436996,
+      "signature": "pn4RQVAkT1Ddg9wbvOb3ui7n1ugOH34ylUsdktsfc35lftTMP4Yne/NY0llsv8jdWxTIPXiHkHeYwsh1mAeCBQ=="
+    },
+    "darwin/arm64": {
+      "file": "mua-union-1.0.0-darwin-arm64.slp",
+      "sha256": "02bc7065a0a17145b7475726c68810698eafce7cb24d4da54da75d3cc2dea621",
+      "size": 8912078,
+      "signature": "BXThS50POW1NOVQ5FgcUQQORzBow6i0Y339IniAYFzS/k/3bNfXBhdsptDXmdGg3Xt2sH53+gZP16ki6Y5uTBg=="
+    },
+    "linux/amd64": {
+      "file": "mua-union-1.0.0-linux-amd64.slp",
+      "sha256": "232d22f6887fb52fba00427c620fb8c5036ba5178f0ffcc90f456e1b4b14a1f1",
+      "size": 9332141,
+      "signature": "CKuVvnrIY+Ng10ODceCMgdNTh8uQYWb28ocFZyE+FfTDddYO5A/Xn0h30IUHSKveS0yybEEDtFIuGSDd00zzBw=="
+    },
+    "linux/arm64": {
+      "file": "mua-union-1.0.0-linux-arm64.slp",
+      "sha256": "0ca22b9f615704958a8c00a9e134554666a416c8f88d737a9834c09ca913ae14",
+      "size": 8613872,
+      "signature": "LB9N77vAwVrvQkOEOre+EkobaEcEPLz/jfO4r14rCxNohA6x4l8udDgbgb/tZ15GDFCMjA+EZysXTHwrYpYaAA=="
+    },
+    "windows/amd64": {
+      "file": "mua-union-1.0.0-windows-amd64.slp",
+      "sha256": "86bb06a6d9c7352a6f6f390ff7fca97ab468c2038a1b7cb6df02472acf9cc57f",
+      "size": 9485498,
+      "signature": "UtxvtsJ7rcgNjV9pjszFc4HlWRpD8I/Ko5Y9euxiLwR+N6Knj1zUcA7MmCy8Chy0vrjbqrXWagKm9+s/y4KrAg=="
+    }
+  }
+}
