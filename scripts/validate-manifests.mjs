@@ -79,6 +79,8 @@ export const PERMISSION_CATALOG = {
   'auth.password': { tier: 'high_risk', nativeOnly: false },
   'provider.storage': { tier: 'high_risk', nativeOnly: true },
   'native.exec': { tier: 'high_risk', nativeOnly: true },
+  'yggdrasil.key.write': { tier: 'high_risk', nativeOnly: false },
+  'players.uuid.write': { tier: 'high_risk', nativeOnly: false },
 }
 
 export function isElevatedPermission(perm) {
@@ -340,8 +342,8 @@ export function validateManifestObject(doc, fileName) {
         errors.push(`duplicate release version "${rel.version}"`)
       }
       seenVersions.add(rel.version)
-      if (!COMMIT_RE.test(rel.commit || '')) {
-        errors.push(`release ${rel.version}: commit must be a pinned 40-char lowercase hex SHA`)
+      if (!COMMIT_RE.test(rel.commit || '') || /^0{40}$/.test(rel.commit || '')) {
+        errors.push(`release ${rel.version}: commit must be a pinned non-zero 40-char lowercase hex SHA`)
       }
       if (Number(rel.apiVersion) !== 1) {
         errors.push(`release ${rel.version}: apiVersion must be 1`)
@@ -364,6 +366,9 @@ export function validateManifestObject(doc, fileName) {
         if (!Array.isArray(rel.permissions)) {
           errors.push(`release ${rel.version}: permissions must be an array`)
         } else {
+          if (doc.kind === 'theme' && rel.permissions.length > 0) {
+            errors.push(`release ${rel.version}: theme packages cannot declare runtime permissions`)
+          }
           const seenPerms = new Set()
           for (const perm of rel.permissions) {
             const def = PERMISSION_CATALOG[perm]
@@ -379,7 +384,12 @@ export function validateManifestObject(doc, fileName) {
             }
             seenPerms.add(perm)
           }
+          if (rt === 'native' && !seenPerms.has('native.exec')) {
+            errors.push(`release ${rel.version}: runtime "native" must declare "native.exec" in permissions`)
+          }
         }
+      } else if (rt === 'native') {
+        errors.push(`release ${rel.version}: runtime "native" must declare "native.exec" in permissions`)
       }
       if (rt === 'native') {
         if (Number(rel.nativeProtocolVersion || 1) !== 1) {
@@ -446,8 +456,30 @@ export function evaluateManifestReviewGate(currentDoc, baseDoc) {
   if (Boolean(currentDoc.official) && !Boolean(baseDoc?.official)) {
     reasons.push('sets official: true')
   }
+  if (baseDoc) {
+    if (currentDoc.repository !== baseDoc.repository) {
+      reasons.push('changes repository URL')
+    }
+    if ((currentDoc.subdir || '') !== (baseDoc.subdir || '')) {
+      reasons.push('changes repository subdir')
+    }
+    if (currentDoc.kind !== baseDoc.kind) {
+      reasons.push('changes package kind')
+    }
+    if (rt !== (baseDoc.runtime || 'js')) {
+      reasons.push('changes runtime tier')
+    }
+  }
 
   const baseVersions = new Set((baseDoc?.releases || []).map((r) => r.version))
+  const currentVersions = new Set((currentDoc.releases || []).map((r) => r.version))
+  if (baseDoc) {
+    for (const v of baseVersions) {
+      if (!currentVersions.has(v)) {
+        reasons.push(`removes previously published release ${v}`)
+      }
+    }
+  }
   const prevPerms = new Set(baseDoc?.releases?.[0]?.permissions || [])
   const addedReleases = []
 

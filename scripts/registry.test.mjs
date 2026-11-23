@@ -288,3 +288,86 @@ releases:
   const errs = validateManifestObject(invalid, 'i18n-changelog.yaml')
   assert.ok(errs.some((e) => e.includes('localized changelog')))
 })
+
+test('high-risk Yggdrasil key and player UUID permissions trigger elevated security review', () => {
+  const baseDoc = {
+    id: 'mua-union',
+    kind: 'plugin',
+    runtime: 'native',
+    official: true,
+    repository: 'https://github.com/Entropy-Increase-Team/skinloom-plugins',
+    releases: [
+      {
+        version: '1.0.0',
+        commit: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        apiVersion: 1,
+        permissions: ['admin.ui', 'native.exec', 'storage.sql', 'yggdrasil.key.write', 'players.uuid.write'],
+      },
+    ],
+  }
+  const gate = evaluateManifestReviewGate(baseDoc, null)
+  assert.equal(gate.needsSecurityReview, true)
+  assert.ok(gate.reasons.some((r) => r.includes('yggdrasil.key.write')))
+  assert.ok(gate.reasons.some((r) => r.includes('players.uuid.write')))
+})
+
+test('validator rejects all-zero placeholder commit SHAs, theme permissions, and native packages missing native.exec', () => {
+  const zeroCommit = {
+    id: 'zero-demo',
+    kind: 'plugin',
+    runtime: 'js',
+    name: { 'zh-CN': '演示', en: 'Demo' },
+    description: { 'zh-CN': '描述', en: 'Desc' },
+    authors: ['Team'],
+    license: 'MIT',
+    repository: 'https://github.com/example/zero-demo',
+    releases: [{ version: '1.0.0', commit: '0000000000000000000000000000000000000000', apiVersion: 1 }],
+  }
+  assert.ok(validateManifestObject(zeroCommit, 'zero-demo.yaml').some((e) => e.includes('non-zero')))
+
+  const badTheme = {
+    ...zeroCommit,
+    id: 'bad-theme',
+    kind: 'theme',
+    releases: [{ version: '1.0.0', commit: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', apiVersion: 1, permissions: ['users.read'] }],
+  }
+  assert.ok(validateManifestObject(badTheme, 'bad-theme.yaml').some((e) => e.includes('theme packages cannot declare')))
+
+  const badNative = {
+    ...zeroCommit,
+    id: 'bad-native',
+    runtime: 'native',
+    releases: [{ version: '1.0.0', commit: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', apiVersion: 1, permissions: ['admin.ui'] }],
+  }
+  assert.ok(validateManifestObject(badNative, 'bad-native.yaml').some((e) => e.includes('native.exec')))
+})
+
+test('review gate blocks fast-track repository/subdir hijack and release removal', () => {
+  const base = {
+    id: 'js-pkg',
+    kind: 'plugin',
+    runtime: 'js',
+    repository: 'https://github.com/org/repo-a',
+    subdir: 'pkg',
+    releases: [{ version: '1.0.0', commit: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', apiVersion: 1, permissions: ['admin.ui'] }],
+  }
+  const hijackedRepo = {
+    ...base,
+    repository: 'https://github.com/attacker/repo-b',
+    releases: [
+      { version: '1.0.1', commit: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', apiVersion: 1, permissions: ['admin.ui'] },
+      ...base.releases,
+    ],
+  }
+  const gate1 = evaluateManifestReviewGate(hijackedRepo, base)
+  assert.equal(gate1.needsSecurityReview, true)
+  assert.ok(gate1.reasons.some((r) => r.includes('repository URL')))
+
+  const removedRel = {
+    ...base,
+    releases: [{ version: '1.0.1', commit: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', apiVersion: 1, permissions: ['admin.ui'] }],
+  }
+  const gate2 = evaluateManifestReviewGate(removedRel, base)
+  assert.equal(gate2.needsSecurityReview, true)
+  assert.ok(gate2.reasons.some((r) => r.includes('removes previously published release')))
+})
