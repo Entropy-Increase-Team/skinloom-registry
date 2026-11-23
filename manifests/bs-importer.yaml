@@ -7,8 +7,8 @@ name:
   zh-CN: Blessing Skin 扩展数据迁移助手
   en: Blessing Skin Extension Importer
 description:
-  zh-CN: 按需安装、迁完可卸载的 Tier 2 原生插件：通过直连 BS 数据库或 Export Bridge 补迁 invitation_codes、mojang_verifications、textures_description 第三方插件数据
-  en: On-demand Tier 2 native plugin to import Blessing Skin third-party plugin extension tables (invitation_codes, mojang_verifications, textures_description) via direct DB or Export Bridge; safe to uninstall after migration
+  zh-CN: 按需安装、迁完可卸载的 Tier 2 原生插件：通过直连 BS 数据库或 Export Bridge 补迁旧站扩展表，并自动发现支持通用 bsMigrateDescribe/bsMigrateImport 协议的已安装插件以迁移其旧站 options 与扩展表数据
+  en: On-demand Tier 2 native plugin to import Blessing Skin third-party extension tables and dynamically discovered plugin migrations (options & custom tables via the generic bsMigrateDescribe/bsMigrateImport protocol) via direct DB or Export Bridge; safe to uninstall after migration
 authors:
   - Entropy-Increase-Team
 license: MIT
@@ -16,6 +16,46 @@ homepage: https://github.com/Entropy-Increase-Team/skinloom-plugins
 repository: https://github.com/Entropy-Increase-Team/skinloom-plugins
 subdir: bs-importer
 releases:
+  - version: 1.1.0
+    commit: a7fa5b28e1ad7496077018461f8624cc036b2d4b
+    apiVersion: 1
+    nativeProtocolVersion: 1
+    targets:
+      - linux/amd64
+      - linux/arm64
+      - windows/amd64
+      - darwin/arm64
+      - darwin/amd64
+    engines:
+      skinloom: ">=1.1.3 <2.0.0"
+      go: ">=1.26.10"
+    permissions:
+      - admin.ui
+      - native.exec
+      - storage.sql
+      - http.stream
+      - users.read
+      - textures.read
+    dependencies: {}
+    optionalDependencies:
+      invitation-codes: "^1.0.0"
+      mojang-verification: "^1.0.0"
+      texture-description: "^1.0.0"
+    publishedAt: "2026-11-23T09:25:00Z"
+    yanked: false
+    changelog:
+      zh-CN: |
+        - 重构为完全通用的 IoC 动态插件迁移框架：通过宿主 `Services.Discover` 自动发现已安装且声明 `bsMigrateDescribe` / `bsMigrateImport` 的插件（如 `mua-union` 等），零特定插件硬编码。
+        - 支持 Blessing Skin Export Bridge 连接 JSON 一键粘贴自动拆分与 `/plugin/skinloom-bridge` 路径规范化。
+        - 加固动态 Provider 最小权限边界：严禁读取 BS 核心表、敏感选项键及过宽前缀，采用三方言兼容 `LIKE ... ESCAPE '!'`、禁用 Bridge 重定向、校验非公网 IP 并对异常报文与 DSN 凭据脱敏；SSE 流鉴权前置至响应头之前。
+        - 优化管理页体验：展示各动态 Provider 声明读取范围、增加正式导入二次确认、独立按钮加载态、探测后勾选状态同步、结构化导入结果摘要卡与移动端日志换行。
+        - 对齐 Go SDK 正式依赖至 `skinloom v1.1.3`（最低宿主版本要求 `>=1.1.3 <2.0.0`）。
+      en: |
+        - Refactored into a fully generic IoC dynamic plugin migration framework using host `Services.Discover` to discover and run any installed plugin implementing `bsMigrateDescribe` / `bsMigrateImport` with zero plugin-specific hardcoding.
+        - Added automatic JSON credential bundle splitting and `/plugin/skinloom-bridge` URL normalization for Blessing Skin Export Bridge connections.
+        - Hardened dynamic provider least-privilege boundaries: blocks BS core tables, sensitive option keys, and overly broad prefixes; uses three-dialect `LIKE ... ESCAPE '!'`, disables Bridge redirects, enforces public-IP checks, scrubs secrets/DSNs from errors, and authenticates SSE streams before flushing headers.
+        - Polished admin UI with per-provider read-scope display, confirmation modal before live imports, independent action spinners, structured import report summary cards, and mobile log wrapping.
+        - Aligned Go SDK dependency to published `skinloom v1.1.3` (requires host `>=1.1.3 <2.0.0`).
   - version: 1.0.1
     commit: a95c3cfcc5c460b35ada1dd1a5f037fe433dfaf4
     apiVersion: 1

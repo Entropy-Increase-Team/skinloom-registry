@@ -17,7 +17,7 @@ repository: https://github.com/Entropy-Increase-Team/skinloom-plugins
 subdir: mua-union
 releases:
   - version: 1.0.0
-    # TODO: Replace with the exact pinned skinloom-plugins commit SHA after tagging skinloom v1.2.0 and removing the local replace directive in mua-union/go.mod.
+    # Example manifest; live official releases are tracked in manifests/mua-union.yaml.
     commit: 89abcdef0123456789abcdef0123456789abcdef
     apiVersion: 1
     nativeProtocolVersion: 1
@@ -28,7 +28,7 @@ releases:
       - darwin/arm64
       - darwin/amd64
     engines:
-      skinloom: ">=1.2.0 <2.0.0"
+      skinloom: ">=1.1.3 <2.0.0"
       go: ">=1.26.10"
     permissions:
       - admin.ui
