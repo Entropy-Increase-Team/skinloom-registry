@@ -5,6 +5,21 @@
 <p align="center">云织 SkinLoom 官方 GitOps 静态签名插件与主题注册中心</p>
 
 <p align="center">
+  <a href="https://github.com/Entropy-Increase-Team/skinloom-registry/actions/workflows/pr-check.yml"><img src="https://img.shields.io/github/actions/workflow/status/Entropy-Increase-Team/skinloom-registry/pr-check.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=PR%20Audit" alt="PR Audit"></a>
+  <a href="https://github.com/Entropy-Increase-Team/skinloom-registry/actions/workflows/publish.yml"><img src="https://img.shields.io/github/actions/workflow/status/Entropy-Increase-Team/skinloom-registry/publish.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=Publish" alt="Publish"></a>
+  <img src="https://img.shields.io/badge/Signing-Ed25519-0F766E?style=flat-square&logo=letsencrypt&logoColor=white" alt="Ed25519 Signed">
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/Entropy-Increase-Team/skinloom-registry?style=flat-square" alt="License"></a>
+  <a href="https://github.com/Entropy-Increase-Team/skinloom-registry/stargazers"><img src="https://img.shields.io/github/stars/Entropy-Increase-Team/skinloom-registry?style=flat-square&logo=github" alt="GitHub Stars"></a>
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/create-skinloom-plugin"><img src="https://img.shields.io/npm/v/create-skinloom-plugin?style=flat-square&logo=npm&label=create-skinloom-plugin&color=CB3837" alt="create-skinloom-plugin"></a>
+  <a href="https://www.npmjs.com/package/@skinloom/cli"><img src="https://img.shields.io/npm/v/@skinloom/cli?style=flat-square&logo=npm&label=%40skinloom%2Fcli&color=CB3837" alt="@skinloom/cli"></a>
+  <img src="https://img.shields.io/badge/Node.js-24-339933?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node.js 24">
+  <img src="https://img.shields.io/badge/Go-1.27-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go 1.27">
+</p>
+
+<p align="center">
   <a href="https://docs.skinloom.cn/docs/plugins/overview">开发文档</a> ·
   <a href="CONTRIBUTING.md">上架指南</a> ·
   <a href="SECURITY.md">安全策略</a> ·
