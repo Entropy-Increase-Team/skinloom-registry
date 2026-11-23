@@ -1,0 +1,61 @@
+id: mua-union
+kind: plugin
+runtime: native
+category: auth
+official: true
+name:
+  zh-CN: MUA Union 联合认证
+  en: MUA Union Federation
+description:
+  zh-CN: 官方 Tier 2 原生插件：接入中国高校 Minecraft 联盟（MUA）联合皮肤站认证体系，支持成员皮肤站白名单同步、角色跨站绑定与改名同步、联合黑名单管理及 Union OAuth2 单点登录
+  en: Official Tier 2 native plugin integrating the Minecraft University Alliance (MUA) Union federation protocol: member skinDomains sync, cross-site player binding and lifecycle sync, union blacklist management, and Union OAuth2 SSO
+authors:
+  - Entropy-Increase-Team
+license: MIT
+homepage: https://github.com/Entropy-Increase-Team/skinloom-plugins
+repository: https://github.com/Entropy-Increase-Team/skinloom-plugins
+subdir: mua-union
+releases:
+  - version: 1.0.0
+    # TODO: Replace with the exact pinned skinloom-plugins commit SHA after tagging skinloom v1.2.0 and removing the local replace directive in mua-union/go.mod.
+    commit: 89abcdef0123456789abcdef0123456789abcdef
+    apiVersion: 1
+    nativeProtocolVersion: 1
+    targets:
+      - linux/amd64
+      - linux/arm64
+      - windows/amd64
+      - darwin/arm64
+      - darwin/amd64
+    engines:
+      skinloom: ">=1.2.0 <2.0.0"
+      go: ">=1.26.10"
+    permissions:
+      - admin.ui
+      - native.exec
+      - storage.sql
+      - routes.public
+      - yggdrasil.extend
+      - yggdrasil.key.write
+      - players.uuid.write
+      - users.read
+      - players.read
+      - cron
+    dependencies: {}
+    optionalDependencies:
+      bs-importer: "^1.0.0"
+    publishedAt: "2026-11-23T04:40:00Z"
+    yanked: false
+    changelog:
+      zh-CN: |
+        - 首个官方 Tier 2 原生 Go 版本，完整兼容中国高校 Minecraft 联盟（MUA）Union 联合认证协议。
+        - 支持 RSA-SHA256 UnionHostVerify 防重放验签、成员站 skinDomains 动态同步、角色生命周期同步与 SQL 失败重试队列。
+        - 提供用户跨站绑定中心（含严格角色归属权校验）、管理员控制台（就绪检查、版本对比、双向诊断）与联合黑名单管理。
+        - 内置 MUA Union OAuth2 单点登录（自动管理 4096 位 RSA 签名密钥对与分片 PKCS#1 v1.5 加密）；所有高危远端回调均默认关闭并写入审计日志。
+        - 实现通用 `bsMigrateDescribe` / `bsMigrateImport` 迁移协议，可被官方 `bs-importer` 插件自动发现，支持从旧版 Blessing Skin（直连数据库或 Export Bridge）一键幂等迁移 MUA Union 配置、成员站列表与 OAuth2 密钥对。
+      en: |
+        - Initial official 5-platform Tier 2 native Go release implementing full MUA Union federation wire protocol compatibility.
+        - Includes RSA-SHA256 UnionHostVerify replay-safe webhooks, dynamic member skinDomains injection, player lifecycle sync with SQL retry outbox, and optional blacklist join guard.
+        - Adds bilingual User Binding Center (with strict player ownership checks), Admin Console (readiness checklist, version comparison, two-way diagnostics), and Union Blacklist management.
+        - Supports MUA Union OAuth2 SSO with auto-managed 4096-bit RSA keys and chunked PKCS#1 v1.5 encryption; high-risk remote webhooks are opt-in and fully audited.
+        - Implements the generic `bsMigrateDescribe` / `bsMigrateImport` migration protocol for automatic discovery by official `bs-importer`, enabling one-click idempotent migration of legacy Blessing Skin MUA Union options, member server list, and OAuth2 keypair.
